@@ -27,6 +27,7 @@ def create_user():
     db.session.commit()
     return user_schema.jsonify(user), 201
 
+
 @app.route("/api/post", methods=["POST"])
 def create_post():
     post_schema = PostSchema()
@@ -43,4 +44,3 @@ def get_all_posts():
     posts_schema = PostSchema(many=True)
     all_posts = Post.query.all()
     return posts_schema.jsonify(all_posts)
-
