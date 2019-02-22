@@ -16,7 +16,7 @@ class User(db.Model):
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.Text(), index=False, unique=False)
-    post = db.Column(db.String(), index=False, unique=False)
+    text = db.Column(db.String(), index=False, unique=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     def __repr__(self):
