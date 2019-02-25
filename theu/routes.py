@@ -2,6 +2,8 @@ from theu import app, db
 
 from theu.models import User, UserSchema, Post, PostSchema
 from flask import request, jsonify
+from sqlalchemy import desc
+
 
 from flask_jwt_extended import (
     JWTManager, jwt_required, create_access_token,
@@ -36,14 +38,27 @@ def create_user():
 @app.route("/api/user/login", methods=["POST"])
 def login():
     email = request.json.get('email', None)
+    username = request.json.get('username', None)
     password = request.json.get('password', None)
 
-    user = User.query.filter_by(email=email).first()
-    # TODO: hash the password, don't wanna be the next experian lol
-    if user.email != email or user.password_hash != password:
-        return jsonify({"msg": "Bad username or password"}), 401
-    access_token = create_access_token(identity=email)
+    if email is None and username is None:
+        return jsonify({"msg": "Provide username or email"}), 401
 
+    if password is None:
+        return jsonify({"msg": "Provide password"}), 401
+
+    user = None
+
+    # TODO: hash the password, don't wanna be the next experian lol
+    if email is not None:
+        user = User.query.filter_by(email=email).first()
+    else:
+        user = User.query.filter_by(username=username).first()
+
+    if not user or user.password_hash != password:
+        return jsonify({"msg": "Bad username or password"}), 401
+
+    access_token = create_access_token(identity=user.id)
     return jsonify(access_token=access_token), 200
 
 
@@ -58,9 +73,15 @@ def protected():
 
 
 @app.route("/api/post", methods=["POST"])
+@jwt_required
 def create_post():
+    current_user_id = get_jwt_identity()
+    print("current_user_id", current_user_id)
     post_schema = PostSchema()
     post, errors = post_schema.load(request.json)
+    post.user_id = current_user_id
+
+    print("Going to save to db post", post)
     if errors:
         return "Error" + str(errors)
     db.session.add(post)
@@ -71,5 +92,23 @@ def create_post():
 @app.route("/api/post", methods=["GET"])
 def get_all_posts():
     posts_schema = PostSchema(many=True)
-    all_posts = Post.query.all()
+    all_posts = Post.query.order_by(Post.id.desc()).all()
     return posts_schema.jsonify(all_posts)
+
+@app.route("/api/post/<int:post_id>", methods=["GET"])
+def get_post_by_id(post_id):
+    post_schema = PostSchema(many=False)
+    post = Post.query.get_or_404(post_id)
+
+    user_schema = UserSchema(many=False)
+    user = User.query.get_or_404(post.user_id)
+
+    print(type(user_schema.dump(user)))
+
+    return jsonify(
+        {
+            "username" : user.username,
+            "post_text" : post.text,
+            "post_title" : post.title
+        }
+    )
