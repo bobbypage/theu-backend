@@ -20,6 +20,9 @@ class Post(db.Model):
     title = db.Column(db.Text(), index=False, unique=False)
     text = db.Column(db.String(), index=False, unique=False)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    like_count = db.Column(db.Integer)
+    view_count = db.Column(db.Integer)
+    comment_count = db.Column(db.Integer)
 
     def __repr__(self):
         return "<Post {} {} {}>".format(self.title, self.text, self.user_id)

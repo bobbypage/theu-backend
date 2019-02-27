@@ -9,6 +9,7 @@ from flask_jwt_extended import (
     JWTManager, jwt_required, create_access_token,
     get_jwt_identity
 )
+import random
 
 
 @app.route("/")
@@ -81,6 +82,10 @@ def create_post():
     post, errors = post_schema.load(request.json)
     post.user_id = current_user_id
 
+    post.like_count = random.randint(10, 30)
+    post.view_count = random.randint(30, 100)
+    post.comment_count = random.randint(0, 5)
+
     print("Going to save to db post", post)
     if errors:
         return "Error" + str(errors)
@@ -103,12 +108,13 @@ def get_post_by_id(post_id):
     user_schema = UserSchema(many=False)
     user = User.query.get_or_404(post.user_id)
 
-    print(type(user_schema.dump(user)))
-
     return jsonify(
         {
             "username" : user.username,
             "post_text" : post.text,
-            "post_title" : post.title
+            "post_title" : post.title,
+            "like_count" : post.like_count,
+            "view_count" : post.view_count,
+            "comment_count" : post.comment_count
         }
     )
