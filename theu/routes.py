@@ -1,6 +1,6 @@
 from theu import app, db
 
-from theu.models import User, UserSchema, Post, PostSchema
+from theu.models import User, UserSchema, Post, PostSchema, Comment, CommentSchema
 from flask import request, jsonify
 from sqlalchemy import desc
 
@@ -9,14 +9,13 @@ from flask_jwt_extended import (
     JWTManager, jwt_required, create_access_token,
     get_jwt_identity
 )
-import random
 
+import random
 
 @app.route("/")
 @app.route("/index")
 def index():
     return "Hello, World!"
-
 
 @app.route("/api/user/<int:user_id>", methods=["GET"])
 def route_user_id(user_id):
@@ -82,17 +81,32 @@ def create_post():
     post, errors = post_schema.load(request.json)
     post.user_id = current_user_id
 
-    post.like_count = random.randint(10, 30)
-    post.view_count = random.randint(30, 100)
-    post.comment_count = random.randint(0, 5)
+    post.like_count = 0
+    post.view_count = 0
+    post.comment_count = 0
 
-    print("Going to save to db post", post)
+    print("Saving to db post", post)
     if errors:
         return "Error" + str(errors)
     db.session.add(post)
     db.session.commit()
     return post_schema.jsonify(post), 201
 
+@app.route("/api/comment", methods=["POST"])
+@jwt_required
+def create_comment():
+    current_user_id = get_jwt_identity()
+    print("current_user_id", current_user_id)
+    comment_schema = CommentSchema()
+    comment, errors = comment_schema.load(request.json)
+    comment.user_id = current_user_id
+
+    print("saving comment", comment)
+    if errors:
+        return "Error" + str(errors)
+    db.session.add(comment)
+    db.session.commit()
+    return comment_schema.jsonify(comment), 201
 
 @app.route("/api/post", methods=["GET"])
 def get_all_posts():
