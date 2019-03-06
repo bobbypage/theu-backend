@@ -1,13 +1,18 @@
 from theu import app, db
 
-from theu.models import User, UserSchema, Post, PostSchema
-from flask import request, jsonify
+from theu.models import User, UserSchema, Post, PostSchema, Verification
+from flask import request, jsonify, redirect
 from sqlalchemy import desc
+import hashlib
+
+from . import email_sender
 
 
 from flask_jwt_extended import (
-    JWTManager, jwt_required, create_access_token,
-    get_jwt_identity
+    JWTManager,
+    jwt_required,
+    create_access_token,
+    get_jwt_identity,
 )
 import random
 
@@ -24,6 +29,13 @@ def route_user_id(user_id):
     user = User.query.get_or_404(user_id)
     return user_schema.jsonify(user)
 
+
+def create_verification_token(email):
+    token = email + app.config["VERIFICATION_SECRET_KEY"]
+    md5_hash = hashlib.md5(token.encode("utf-8")).hexdigest()
+    return md5_hash
+
+
 # Creates a new user
 @app.route("/api/user", methods=["POST"])
 def create_user():
@@ -33,14 +45,53 @@ def create_user():
         return "Error" + str(errors)
     db.session.add(user)
     db.session.commit()
+
+    if app.config["VERIFICATION_ENABLED"]:
+        # Create the verification
+        verification = Verification()
+        verification.user_id = user.id
+        verification.token = create_verification_token(user.email)
+        db.session.add(verification)
+        db.session.commit()
+
+        email_sender.send_email(
+            from_email=user.email,
+            to_email=user.email,
+            subject="Please verify your email with the U",
+            email_text="Please visit {}/verify?token={}".format(
+                app.config["BACKEND_URL"], verification.token
+            ),
+        )
+
     return user_schema.jsonify(user), 201
+
+
+@app.route("/verify", methods=["GET"])
+def verify():
+    token = request.args.get("token")
+    if not token:
+        return "No token"
+
+    verification = Verification.query.filter_by(token=token).first()
+    if not verification:
+        return "Token is invalid"
+
+    user = User.query.filter_by(id=verification.user_id).first()
+    if not user:
+        return "Unable to find user"
+
+    user.is_verified = True
+    db.session.commit()
+
+    return redirect(app.config["FRONTEND_URL"], code=302)
+
 
 # Creates the JWT token for an existing user
 @app.route("/api/user/login", methods=["POST"])
 def login():
-    email = request.json.get('email', None)
-    username = request.json.get('username', None)
-    password = request.json.get('password', None)
+    email = request.json.get("email", None)
+    username = request.json.get("username", None)
+    password = request.json.get("password", None)
 
     if email is None and username is None:
         return jsonify({"msg": "Provide username or email"}), 401
@@ -65,7 +116,7 @@ def login():
 
 # Example of protected route
 # Has to have http header of Authorization : bearer XXX where XXX is JWT token
-@app.route('/api/protected', methods=['GET'])
+@app.route("/api/protected", methods=["GET"])
 @jwt_required
 def protected():
     # Access the identity of the current user with get_jwt_identity
@@ -100,6 +151,7 @@ def get_all_posts():
     all_posts = Post.query.order_by(Post.id.desc()).all()
     return posts_schema.jsonify(all_posts)
 
+
 @app.route("/api/post/<int:post_id>", methods=["GET"])
 def get_post_by_id(post_id):
     post_schema = PostSchema(many=False)
@@ -110,11 +162,11 @@ def get_post_by_id(post_id):
 
     return jsonify(
         {
-            "username" : user.username,
-            "post_text" : post.text,
-            "post_title" : post.title,
-            "like_count" : post.like_count,
-            "view_count" : post.view_count,
-            "comment_count" : post.comment_count
+            "username": user.username,
+            "post_text": post.text,
+            "post_title": post.title,
+            "like_count": post.like_count,
+            "view_count": post.view_count,
+            "comment_count": post.comment_count,
         }
     )

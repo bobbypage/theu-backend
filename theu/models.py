@@ -10,9 +10,18 @@ class User(db.Model):
     username = db.Column(db.String(64), index=True, unique=True)
     email = db.Column(db.String(120), index=True, unique=True)
     password_hash = db.Column(db.String(128))
+    is_verified = db.Column(db.Boolean, default=False)
 
     def __repr__(self):
         return "<User {}>".format(self.username)
+
+class Verification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(32))
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+
+    def __repr__(self):
+        return "<Verification {}>".format(self.username)
 
 
 class Post(db.Model):
