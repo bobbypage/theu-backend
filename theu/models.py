@@ -37,6 +37,14 @@ class Post(db.Model):
         return "<Post {} {} {}>".format(self.title, self.text, self.user_id)
 
 
+class Like(db.Model):
+    id = db.Column(db.String(), primary_key=True)
+    post_id = db.Column(db.Integer)
+    user_id = db.Column(db.Integer)
+
+    def __repr__(self):
+        return  "<Like {}:{}>".format(self.user_id, self.post_id)
+
 class UserSchema(ma.ModelSchema):
     class Meta:
         model = User
@@ -45,3 +53,11 @@ class UserSchema(ma.ModelSchema):
 class PostSchema(ma.ModelSchema):
     class Meta:
         model = Post
+
+class LikeSchema(ma.ModelSchema):
+    class Meta:
+        model = Like
+
+if __name__ == '__main__':
+    db.create_all()
+    db.session.commit()

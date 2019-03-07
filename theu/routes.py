@@ -1,6 +1,6 @@
 from theu import app, db
 
-from theu.models import User, UserSchema, Post, PostSchema, Verification
+from theu.models import User, UserSchema, Post, PostSchema, Verification, Like, LikeSchema
 from flask import request, jsonify, redirect
 from sqlalchemy import desc
 import hashlib
@@ -43,6 +43,7 @@ def create_user():
     user, errors = user_schema.load(request.json)
     if errors:
         return "Error" + str(errors)
+
     db.session.add(user)
     db.session.commit()
 
@@ -123,6 +124,30 @@ def protected():
     current_user = get_jwt_identity()
     return jsonify(logged_in_as=current_user), 200
 
+@app.route("/api/like/<int:post_id>", methods=["POST"])
+@jwt_required
+def like_post(post_id):
+    current_user = get_jwt_identity()
+    res = Like.query.get("%d:%d" % (current_user, post_id))
+    post = Post.query.get_or_404(post_id)
+
+    like_schema = LikeSchema()
+    like, errors = like_schema.load({"id": "%d:%d" % (current_user, post_id),
+                                     "post_id": post_id,
+                                     "user_id": current_user})
+
+    if res is None:
+        post.like_count = post.like_count + 1
+        db.session.add(like)
+    else:
+        post.like_count = post.like_count - 1
+        db.session.delete(like)
+
+    db.session.add(post)
+    db.session.commit()
+
+    return jsonify({"like_count" : post.like_count}), 200
+
 
 @app.route("/api/post", methods=["POST"])
 @jwt_required
@@ -133,7 +158,7 @@ def create_post():
     post, errors = post_schema.load(request.json)
     post.user_id = current_user_id
 
-    post.like_count = random.randint(10, 30)
+    post.like_count = 0
     post.view_count = random.randint(30, 100)
     post.comment_count = random.randint(0, 5)
 
