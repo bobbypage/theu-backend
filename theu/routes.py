@@ -28,6 +28,7 @@ from flask_jwt_extended import (
 
 import random
 
+
 @app.route("/")
 @app.route("/index")
 def index():
@@ -39,11 +40,13 @@ def create_verification_token(email):
     md5_hash = hashlib.md5(token.encode("utf-8")).hexdigest()
     return md5_hash
 
+
 @app.route("/api/user/<int:user_id>", methods=["GET"])
 def route_user_id(user_id):
     user_schema = UserSchema()
     user = User.query.get_or_404(user_id)
     return user_schema.jsonify(user)
+
 
 # Creates a new user
 @app.route("/api/user", methods=["POST"])
@@ -186,6 +189,7 @@ def create_post():
     db.session.commit()
     return post_schema.jsonify(post), 201
 
+
 @app.route("/api/comment", methods=["POST"])
 @jwt_required
 def create_comment():
@@ -206,6 +210,7 @@ def create_comment():
     db.session.add(comment)
     db.session.commit()
     return comment_schema.jsonify(comment), 201
+
 
 @app.route("/api/post", methods=["GET"])
 def get_all_posts():
@@ -231,12 +236,12 @@ def get_post_by_id(post_id):
 
     return jsonify(
         {
-            "username" : user.username,
-            "post_text" : post.text,
-            "post_title" : post.title,
-            "like_count" : post.like_count,
-            "view_count" : post.view_count,
-            "comment_count" : post.comment_count,
-            "all_comments" : all_comments
+            "username": user.username,
+            "post_text": post.text,
+            "post_title": post.title,
+            "like_count": post.like_count,
+            "view_count": post.view_count,
+            "comment_count": post.comment_count,
+            "all_comments": all_comments,
         }
     )
