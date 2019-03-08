@@ -175,9 +175,6 @@ def like_post(post_id):
     if res is None:
         post.like_count = post.like_count + 1
         db.session.add(like)
-    else:
-        post.like_count = post.like_count - 1
-        db.session.delete(like)
 
     db.session.add(post)
     db.session.commit()
