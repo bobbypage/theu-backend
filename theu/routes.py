@@ -84,7 +84,7 @@ def create_user():
 @app.route("/verify", methods=["GET"])
 def verify():
     token = request.args.get("token")
-    if not token:
+    if not token:x
         return "No token"
 
     verification = Verification.query.filter_by(token=token).first()
@@ -163,6 +163,9 @@ def like_post(post_id):
     if res is None:
         post.like_count = post.like_count + 1
         db.session.add(like)
+    else:
+        post.like_count = post.like_count - 1
+        db.session.delete(like)
 
     db.session.add(post)
     db.session.commit()
@@ -180,7 +183,7 @@ def create_post():
     post.user_id = current_user_id
 
     post.like_count = 0
-    post.view_count = random.randint(30, 100)
+    post.view_count = 0
     post.comment_count = 0
 
     print("Saving to db post", post)
@@ -233,7 +236,7 @@ def get_post_by_id(post_id):
     comments = Comment.query.filter_by(post_id=post_id).order_by(Comment.id.desc())
     all_comments = []
     for row in comments:
-        all_comments.append((user.username, row.text))
+        all_comments.append((row.user_id, row.text))
 
     return jsonify(
         {
