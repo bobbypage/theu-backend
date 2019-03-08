@@ -91,7 +91,7 @@ def create_user():
 @app.route("/verify", methods=["GET"])
 def verify():
     token = request.args.get("token")
-    if not token:x
+    if not token:
         return "No token"
 
     verification = Verification.query.filter_by(token=token).first()
