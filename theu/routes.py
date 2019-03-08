@@ -10,7 +10,7 @@ from theu.models import (
     LikeSchema,
 )
 from flask import request, jsonify, redirect
-
+from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import desc
 import hashlib
 
@@ -32,13 +32,6 @@ def index():
     return "Hello, World!"
 
 
-@app.route("/api/user/<int:user_id>", methods=["GET"])
-def route_user_id(user_id):
-    user_schema = UserSchema()
-    user = User.query.get_or_404(user_id)
-    return user_schema.jsonify(user)
-
-
 def create_verification_token(email):
     token = email + app.config["VERIFICATION_SECRET_KEY"]
     md5_hash = hashlib.md5(token.encode("utf-8")).hexdigest()
@@ -53,6 +46,8 @@ def create_user():
     if errors:
         return "Error" + str(errors)
 
+    # original user.password_hash is plain text, hash it before saving to DB
+    user.password_hash = generate_password_hash(user.password_hash)
     db.session.add(user)
     db.session.commit()
 
@@ -117,7 +112,8 @@ def login():
     else:
         user = User.query.filter_by(username=username).first()
 
-    if not user or user.password_hash != password:
+    password_correct = check_password_hash(user.password_hash, password)
+    if not user or not password_correct:
         return jsonify({"msg": "Bad username or password"}), 401
 
     access_token = create_access_token(identity=user.id)
