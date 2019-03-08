@@ -35,6 +35,12 @@ def upgrade():
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('like',
+                    sa.Column('id', sa.String(), nullable=False),
+                    sa.Column('post_id', sa.Integer(), nullable=False),
+                    sa.Column('user_id', sa.Integer(), nullable=False),
+                    sa.PrimaryKeyConstraint('id')
+                    )
     # ### end Alembic commands ###
 
 
