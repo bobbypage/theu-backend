@@ -33,7 +33,7 @@ Welcome to the U!
 
 The U is the first anonymous social networking platform exclusive for students. Please verify your account by visiting the URL below.
 
-This is the first alpha of alpha version and we would love to get your feedback. Please checkout the website, log in and join the forum.
+This is the first alpha version and we would love to get your feedback. Please checkout the website, log in and join the forum.
 
 {}/verify?token={}
 
