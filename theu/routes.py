@@ -126,8 +126,12 @@ def login():
     if not user or not password_correct:
         return jsonify({"msg": "Bad username or password"}), 401
 
-    access_token = create_access_token(identity=user.id)
-    return jsonify(access_token=access_token), 200
+    if user.is_verified:
+        access_token = create_access_token(identity=user.id)
+        return jsonify(access_token=access_token), 200
+    else:
+        return jsonify({"msg": "Please verify by clicking on the email"}), 409
+
 
 
 # Example of protected route
