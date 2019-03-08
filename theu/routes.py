@@ -28,6 +28,13 @@ from flask_jwt_extended import (
 
 import random
 
+EMAIL_PLACEHOLDER="""
+Welcome to the U!
+
+You have the privilege of being of one the earliest users of the U. The first anonymous social networking platform exclusive for students. Please verify your account by visiting the URL below.
+
+{}/verify?token={}
+"""
 
 @app.route("/")
 @app.route("/index")
@@ -46,7 +53,6 @@ def route_user_id(user_id):
     user_schema = UserSchema()
     user = User.query.get_or_404(user_id)
     return user_schema.jsonify(user)
-
 
 # Creates a new user
 @app.route("/api/user", methods=["POST"])
@@ -69,11 +75,12 @@ def create_user():
         db.session.add(verification)
         db.session.commit()
 
+
         email_sender.send_email(
-            from_email=user.email,
+            from_email="theu@gmail.com",
             to_email=user.email,
-            subject="Please verify your email with the U",
-            email_text="Please visit {}/verify?token={}".format(
+            subject="Welcome to the U!",
+            email_text=EMAIL_PLACEHOLDER.format(
                 app.config["BACKEND_URL"], verification.token
             ),
         )
