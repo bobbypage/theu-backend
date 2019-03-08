@@ -31,9 +31,14 @@ import random
 EMAIL_PLACEHOLDER="""
 Welcome to the U!
 
-You have the privilege of being of one the earliest users of the U. The first anonymous social networking platform exclusive for students. Please verify your account by visiting the URL below.
+The U is the first anonymous social networking platform exclusive for students. Please verify your account by visiting the URL below.
+
+This is the first alpha of alpha version and we would love to get your feedback. Please checkout the website, log in and join the forum.
 
 {}/verify?token={}
+
+Thank you,
+The U team
 """
 
 @app.route("/")
@@ -77,7 +82,7 @@ def create_user():
 
 
         email_sender.send_email(
-            from_email="theu@gmail.com",
+            from_email="timrocks@cs.washington.edu",
             to_email=user.email,
             subject="Welcome to the U!",
             email_text=EMAIL_PLACEHOLDER.format(
