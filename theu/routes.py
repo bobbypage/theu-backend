@@ -11,6 +11,8 @@ from theu.models import (
 )
 from flask import request, jsonify, redirect
 from werkzeug.security import generate_password_hash, check_password_hash
+from theu.models import User, UserSchema, Post, PostSchema, Comment, CommentSchema
+from flask import request, jsonify
 from sqlalchemy import desc
 import hashlib
 
@@ -23,8 +25,8 @@ from flask_jwt_extended import (
     create_access_token,
     get_jwt_identity,
 )
-import random
 
+import random
 
 @app.route("/")
 @app.route("/index")
@@ -37,6 +39,11 @@ def create_verification_token(email):
     md5_hash = hashlib.md5(token.encode("utf-8")).hexdigest()
     return md5_hash
 
+@app.route("/api/user/<int:user_id>", methods=["GET"])
+def route_user_id(user_id):
+    user_schema = UserSchema()
+    user = User.query.get_or_404(user_id)
+    return user_schema.jsonify(user)
 
 # Creates a new user
 @app.route("/api/user", methods=["POST"])
@@ -170,15 +177,35 @@ def create_post():
 
     post.like_count = 0
     post.view_count = random.randint(30, 100)
-    post.comment_count = random.randint(0, 5)
+    post.comment_count = 0
 
-    print("Going to save to db post", post)
+    print("Saving to db post", post)
     if errors:
         return "Error" + str(errors)
     db.session.add(post)
     db.session.commit()
     return post_schema.jsonify(post), 201
 
+@app.route("/api/comment", methods=["POST"])
+@jwt_required
+def create_comment():
+    current_user_id = get_jwt_identity()
+
+    comment_schema = CommentSchema()
+    comment, errors = comment_schema.load(request.json)
+    comment.user_id = current_user_id
+
+    # increase the cound of comments for this post_id
+    post_schema = PostSchema(many=False)
+    post = Post.query.get_or_404(comment.post_id)
+    post.comment_count += 1
+
+    print("saving comment", comment)
+    if errors:
+        return "Error" + str(errors)
+    db.session.add(comment)
+    db.session.commit()
+    return comment_schema.jsonify(comment), 201
 
 @app.route("/api/post", methods=["GET"])
 def get_all_posts():
@@ -195,13 +222,21 @@ def get_post_by_id(post_id):
     user_schema = UserSchema(many=False)
     user = User.query.get_or_404(post.user_id)
 
+    # create a list/array of all comments linked to that post_id
+    comment_schema = CommentSchema(many=False)
+    comments = Comment.query.filter_by(post_id=post_id).order_by(Comment.id.desc())
+    all_comments = []
+    for row in comments:
+        all_comments.append((row.user_id, row.text))
+
     return jsonify(
         {
-            "username": user.username,
-            "post_text": post.text,
-            "post_title": post.title,
-            "like_count": post.like_count,
-            "view_count": post.view_count,
-            "comment_count": post.comment_count,
+            "username" : user.username,
+            "post_text" : post.text,
+            "post_title" : post.title,
+            "like_count" : post.like_count,
+            "view_count" : post.view_count,
+            "comment_count" : post.comment_count,
+            "all_comments" : all_comments
         }
     )

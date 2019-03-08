@@ -4,7 +4,6 @@ from flask_marshmallow import Marshmallow
 
 ma = Marshmallow(app)
 
-
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
@@ -23,7 +22,6 @@ class Verification(db.Model):
     def __repr__(self):
         return "<Verification {}>".format(self.username)
 
-
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.Text(), index=False, unique=False)
@@ -36,6 +34,14 @@ class Post(db.Model):
     def __repr__(self):
         return "<Post {} {} {}>".format(self.title, self.text, self.user_id)
 
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    text = db.Column(db.String(), index=False, unique=False)
+
+    def __repr__(self):
+        return "<Comment {} {} {}>".format(self.post_id, self.user_id, self.text)
 
 class Like(db.Model):
     id = db.Column(db.String(), primary_key=True)
@@ -49,7 +55,6 @@ class UserSchema(ma.ModelSchema):
     class Meta:
         model = User
 
-
 class PostSchema(ma.ModelSchema):
     class Meta:
         model = Post
@@ -61,3 +66,7 @@ class LikeSchema(ma.ModelSchema):
 if __name__ == '__main__':
     db.create_all()
     db.session.commit()
+
+class CommentSchema(ma.ModelSchema):
+    class Meta:
+        model = Comment
