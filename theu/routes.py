@@ -81,8 +81,8 @@ def create_post():
     post, errors = post_schema.load(request.json)
     post.user_id = current_user_id
 
-    post.like_count = 0
-    post.view_count = 0
+    post.like_count = random.randint(10, 30)
+    post.view_count = random.randint(30, 100)
     post.comment_count = 0
 
     print("Saving to db post", post)
@@ -96,10 +96,15 @@ def create_post():
 @jwt_required
 def create_comment():
     current_user_id = get_jwt_identity()
-    print("current_user_id", current_user_id)
+
     comment_schema = CommentSchema()
     comment, errors = comment_schema.load(request.json)
     comment.user_id = current_user_id
+
+    # increase the cound of comments for this post_id
+    post_schema = PostSchema(many=False)
+    post = Post.query.get_or_404(comment.post_id)
+    post.comment_count += 1
 
     print("saving comment", comment)
     if errors:
@@ -122,6 +127,13 @@ def get_post_by_id(post_id):
     user_schema = UserSchema(many=False)
     user = User.query.get_or_404(post.user_id)
 
+    # create a list/array of all comments linked to that post_id
+    comment_schema = CommentSchema(many=False)
+    comments = Comment.query.filter_by(post_id=post_id).order_by(Comment.id.desc())
+    all_comments = []
+    for row in comments:
+        all_comments.append((row.user_id, row.text))
+
     return jsonify(
         {
             "username" : user.username,
@@ -129,6 +141,7 @@ def get_post_by_id(post_id):
             "post_title" : post.title,
             "like_count" : post.like_count,
             "view_count" : post.view_count,
-            "comment_count" : post.comment_count
+            "comment_count" : post.comment_count,
+            "all_comments" : all_comments
         }
     )
