@@ -181,6 +181,9 @@ def get_all_posts():
 def get_post_by_id(post_id):
     post_schema = PostSchema(many=False)
     post = Post.query.get_or_404(post_id)
+    post.view_count += 1
+    db.session.add(post)
+    db.session.commit()
 
     user_schema = UserSchema(many=False)
     user = User.query.get_or_404(post.user_id)
